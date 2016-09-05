@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+
+import websocket
+import msgpack
+import gym
+from gym import error, spaces
+
+import numpy as np
+
+class GymUnityEnv(gym.Env):
+
+    def __init__(self): #’´Ä’¶­’¤¬’ºî’¤é’¤ì’¤¿’¤È’¤­
+        websocket.enableTrace(True)
+    	self.ws = websocket.create_connection("ws://localhost:4649/CommunicationGym")
+        self.action_space = spaces.Discrete(4)  # 4’¤Ä’¤Î’¥¢’¥¯’¥·’¥ç’¥ó’¤ò’¥»’¥Ã’¥È
+
+    def step(self, action):  # ’¥¹’¥Æ’¥Ã’¥×’½è’Íý ’¡¢action’¤ò’³°’¤«’¤é’¼õ’¤±’¼è’¤ë
+        actiondata = msgpack.packb({"command": str(action)})  # ’¥¢’¥¯’¥·’¥ç’¥ó’¤òpack
+        self.ws.send(actiondata)  # ’Á÷’¿®
+
+        # Unity Process
+
+        statedata = self.ws.recv()  # ’¾õ’ÂÖ’¤Î’¼õ’¿®
+        state = msgpack.unpackb(statedata)  # ’¼õ’¤±’¼è’¤Ã’¤¿’¥Ç’¡¼’¥¿’¤òunpack
+
+        return np.array(state['image']), np.array([state['reward']]), False, {}
+
+    def close(self):  # ’¥³’¥Í’¥¯’¥·’¥ç’¥ó’½ª’Î»’½è’Íý
+        self.ws.close()  # ’¥³’¥Í’¥¯’¥·’¥ç’¥ó’½ª’Î»
